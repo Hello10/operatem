@@ -1,5 +1,5 @@
-import { readFileSync } from 'fs';
-import { join } from 'path';
+import { readFileSync } from "fs";
+import { join } from "path";
 
 export interface OperatemConfig {
   submodules: string;
@@ -7,20 +7,20 @@ export interface OperatemConfig {
 }
 
 const DEFAULT_CONFIG: OperatemConfig = {
-  submodules: 'submodules',
-  packages: 'packages'
+  submodules: "submodules",
+  packages: "packages",
 };
 
-export function loadConfig(): OperatemConfig {
+export function loadConfig(basePath = process.cwd()): OperatemConfig {
   try {
     // Look for operatem.json in current working directory
-    const configPath = join(process.cwd(), 'operatem.json');
-    const configFile = readFileSync(configPath, 'utf-8');
+    const configPath = join(basePath, "operatem.json");
+    const configFile = readFileSync(configPath, "utf-8");
     const config = JSON.parse(configFile) as Partial<OperatemConfig>;
-    
+
     return {
       ...DEFAULT_CONFIG,
-      ...config
+      ...config,
     };
   } catch {
     // Return default config if file doesn't exist or is invalid

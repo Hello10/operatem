@@ -9,7 +9,8 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/cli.ts",
-    "start": "tsx src/cli.ts"
+    "start": "tsx src/cli.ts",
+    "test": "tsx --test test/*.test.ts"
   },
   "dependencies": {
     "meow": "^13.2.0",
@@ -26,7 +27,12 @@
   "engines": {
     "node": ">=18"
   },
-  "keywords": ["metarepo", "git", "submodules", "cli"],
+  "keywords": [
+    "metarepo",
+    "git",
+    "submodules",
+    "cli"
+  ],
   "author": "jump.systems",
   "license": "MIT",
   "repository": {
@@ -36,5 +42,6 @@
   "bugs": {
     "url": "https://github.com/jumpsystems/operatem/issues"
   },
-  "homepage": "https://github.com/jumpsystems/operatem"
+  "homepage": "https://github.com/jumpsystems/operatem",
+  "packageManager": "pnpm@10.29.2"
 }
