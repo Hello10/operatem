@@ -20,7 +20,6 @@ const cli = meow(generateUsage(), {
     workspace: { type: "string" },
     parallel: { type: "boolean" },
     message: { type: "string", shortFlag: "m" },
-    all: { type: "boolean" },
     fetch: { type: "boolean", default: true },
     help: {
       type: "boolean",

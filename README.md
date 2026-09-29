@@ -72,11 +72,12 @@ The reference below is generated from the command definitions by `pnpm docs`; `p
 
 ### commit
 
-- `operatem commit -m <message> [--workspace] [--all]`
-  Commit dirty submodules with a message, then commit the metarepo pointers
+- `operatem commit -m <message> [--workspace]`
+  Commit dirty submodules with a message, then commit the metarepo pointers.
+  Commits everything `status` reports as dirty, untracked files included —
+  use `.gitignore` to keep files out.
   - `-m`, `--message`: Commit message (-m)
   - `--workspace`: Only commit this submodule
-  - `--all`: Stage untracked files too
 
 ### install
 

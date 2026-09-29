@@ -14,17 +14,17 @@ export interface CommitOptions {
   message: string;
   /* Limit submodule commits to one workspace. The metarepo is always considered. */
   workspace?: string;
-  /* Stage untracked files too (git add -A instead of -u). */
-  all?: boolean;
 }
 
-/* Stage and commit one checkout. Resolves to the new sha, or null when nothing was staged. */
+/* Stage and commit one checkout — everything status calls dirty, untracked
+   included, so a commit can never leave a partial state behind. .gitignore is
+   the mechanism for keeping files out. Resolves to the new sha, or null when
+   nothing was staged. */
 async function commitRepo(
   cwd: string,
   message: string,
-  all: boolean,
 ): Promise<string | null> {
-  await git(cwd, ["add", all ? "-A" : "-u"]);
+  await git(cwd, ["add", "-A"]);
   if (!(await hasStaged(cwd))) return null;
   await git(cwd, ["commit", "--quiet", "-m", message]);
   return headSha(cwd);
@@ -36,7 +36,7 @@ async function commitRepo(
  * submodules; when none were committed, it uses `message` as-is.
  */
 export function commit(root: string, options: CommitOptions): Operation {
-  const { message, workspace, all = false } = options;
+  const { message, workspace } = options;
   return async (report, progress) => {
     let ok = true;
     const bumped: string[] = [];
@@ -59,14 +59,9 @@ export function commit(root: string, options: CommitOptions): Operation {
           });
           continue;
         }
-        const sha = await commitRepo(cwd, message, all);
+        const sha = await commitRepo(cwd, message);
         if (sha === null) {
-          report({
-            name: sub.name,
-            state: "skipped",
-            tone: "warn",
-            detail: "only untracked files; pass --all to include them",
-          });
+          report({ name: sub.name, state: "clean", tone: "muted" });
           continue;
         }
         bumped.push(sub.name);
@@ -82,7 +77,7 @@ export function commit(root: string, options: CommitOptions): Operation {
       const rootMessage = bumped.length
         ? `bump ${bumped.join(", ")}: ${message}`
         : message;
-      const sha = await commitRepo(root, rootMessage, all);
+      const sha = await commitRepo(root, rootMessage);
       report(
         sha === null
           ? { name: "metarepo", state: "clean", tone: "muted" }

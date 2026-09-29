@@ -72,8 +72,13 @@ test("commit then push records and publishes submodule work", async () => {
       await run(repo.root, ["log", "-1", "--format=%s"]),
       "bump submodules/sub: edit readme",
     );
-    /* Untracked files stay untracked without --all. */
-    assert.match(await run(repo.sub, ["status", "--porcelain"]), /\?\? new\.txt/);
+    /* Commit takes everything status calls dirty — untracked included — so a
+       commit can never leave a partial state behind. */
+    assert.equal(await run(repo.sub, ["status", "--porcelain"]), "");
+    assert.match(
+      await run(repo.sub, ["show", "--stat", "--format=", "HEAD"]),
+      /new\.txt/,
+    );
 
     const pushed = collector();
     assert.equal(await push(repo.root)(pushed.report, pushed.progress), true);
@@ -87,7 +92,7 @@ test("commit then push records and publishes submodule work", async () => {
 
     const rows = await status(repo.root, { fetch: false });
     const sub = rows.find((r) => r.name === "submodules/sub")!;
-    assert.equal(sub.dirty, 1);
+    assert.equal(sub.dirty, 0);
     assert.equal(sub.ahead, 0);
     assert.equal(sub.pointer, null);
   } finally {

@@ -4,18 +4,16 @@ import { commit as commitOperation } from "../ops/commit";
 interface CommitProps {
   message: string;
   workspace?: string;
-  all?: boolean;
   _originalCwd?: string;
 }
 
-function Commit({ message, workspace, all, _originalCwd }: CommitProps) {
+function Commit({ message, workspace, _originalCwd }: CommitProps) {
   return (
     <RunOperation
       title="commit"
       operation={commitOperation(_originalCwd || process.cwd(), {
         message,
         workspace,
-        all,
       })}
     />
   );
@@ -31,11 +29,6 @@ export const commit = {
     {
       name: "workspace",
       description: "Only commit this submodule",
-      required: false,
-    },
-    {
-      name: "all",
-      description: "Stage untracked files too",
       required: false,
     },
   ],
