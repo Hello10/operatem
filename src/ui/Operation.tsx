@@ -49,19 +49,20 @@ export function RunOperation({ title, operation }: RunOperationProps) {
   useEffect(() => {
     if (ok === null) return;
     process.exitCode = ok ? 0 : 1;
-    exit();
+    /* Exit on the next tick so <Static> has committed the last line; exiting
+       in the same commit makes Ink's final frame print that line twice. */
+    const timer = setTimeout(exit, 0);
+    return () => clearTimeout(timer);
   }, [ok]);
 
   return (
     <Box flexDirection="column">
       <Static items={lines}>
         {(line, index) => (
-          <Box key={`${line.name}-${index}`}>
-            <Text color={COLOR[line.tone]}>
-              {line.tone === "bad" ? "✗" : "✓"} {line.name}: {line.state}
-            </Text>
+          <Text key={`${line.name}-${index}`} color={COLOR[line.tone]}>
+            {line.tone === "bad" ? "✗" : "✓"} {line.name}: {line.state}
             {line.detail && <Text color="gray"> — {line.detail}</Text>}
-          </Box>
+          </Text>
         )}
       </Static>
       {progress && process.stdout.isTTY && (
