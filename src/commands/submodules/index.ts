@@ -1,16 +1,18 @@
-import { add } from './add';
-import { list } from './list';
-import { sync } from './sync';
-import { push } from './push';
+import { add } from "./add";
+import { statusCommand } from "./status";
+import { sync } from "./sync";
+import { commit } from "./commit";
+import { push } from "./push";
 
 export const submodules = {
-  name: 'submodules',
-  description: 'Manage git submodules',
-  aliases: ['subs'],
+  name: "submodules",
+  description: "Manage git submodules",
+  aliases: ["subs"],
   commands: {
-    add,
-    list,
+    status: statusCommand,
     sync,
-    push
-  }
+    commit,
+    push,
+    add,
+  },
 };

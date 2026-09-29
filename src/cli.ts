@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import "./tty";
 import React from "react";
 import meow from "meow";
 import { render } from "ink";
@@ -18,6 +19,9 @@ const cli = meow(generateUsage(), {
     name: { type: "string" },
     workspace: { type: "string" },
     parallel: { type: "boolean" },
+    message: { type: "string", shortFlag: "m" },
+    all: { type: "boolean" },
+    fetch: { type: "boolean", default: true },
     help: {
       type: "boolean",
       shortFlag: "h",
@@ -120,4 +124,5 @@ if (command.flags) {
 // Pass the original working directory to the component
 props._originalCwd = originalCwd;
 
-render(React.createElement(command.component, props));
+/* Commands exit through Ink's useApp().exit() after setting process.exitCode. */
+await render(React.createElement(command.component, props)).waitUntilExit();

@@ -10,7 +10,8 @@
     "build": "tsc",
     "dev": "tsx src/cli.ts",
     "start": "tsx src/cli.ts",
-    "test": "tsx --test test/*.test.ts"
+    "docs": "tsx scripts/docs.ts",
+    "test": "tsx --test test/*.test.ts && tsx scripts/docs.ts --check"
   },
   "dependencies": {
     "meow": "^13.2.0",
