@@ -4,10 +4,12 @@ import { renderCommands, updateReadme } from "../src/docs";
 
 test("renders every command group into the README section", () => {
   const rendered = renderCommands();
-  assert.match(rendered, /### submodules \(alias: subs\)/);
-  assert.match(rendered, /`operatem submodules sync`/);
-  assert.match(rendered, /`operatem submodules commit -m <message>/);
+  assert.match(rendered, /### status/);
+  assert.match(rendered, /`operatem sync`/);
+  assert.match(rendered, /`operatem commit -m <message>/);
+  assert.match(rendered, /`operatem add --url/);
   assert.match(rendered, /### run/);
+  assert.doesNotMatch(rendered, /submodules (sync|commit)/);
 });
 
 test("updateReadme replaces only the marked section and is idempotent", () => {

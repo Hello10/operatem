@@ -1,5 +1,5 @@
-import { RunOperation } from "../../ui/Operation";
-import { push as pushOperation } from "../../ops/push";
+import { RunOperation } from "../ui/Operation";
+import { push as pushOperation } from "../ops/push";
 
 interface PushProps {
   _originalCwd?: string;

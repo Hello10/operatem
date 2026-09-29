@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Box, Text, useApp } from "ink";
-import { rowHasIssue, status, type StatusRow } from "../../ops/status";
+import { rowHasIssue, status, type StatusRow } from "../ops/status";
 
 interface StatusProps {
   fetch?: boolean;

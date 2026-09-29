@@ -1,5 +1,5 @@
-import { RunOperation } from "../../ui/Operation";
-import { sync as syncOperation } from "../../ops/sync";
+import { RunOperation } from "../ui/Operation";
+import { sync as syncOperation } from "../ops/sync";
 
 interface SyncProps {
   _originalCwd?: string;

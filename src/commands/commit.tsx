@@ -1,5 +1,5 @@
-import { RunOperation } from "../../ui/Operation";
-import { commit as commitOperation } from "../../ops/commit";
+import { RunOperation } from "../ui/Operation";
+import { commit as commitOperation } from "../ops/commit";
 
 interface CommitProps {
   message: string;

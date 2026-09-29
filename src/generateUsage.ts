@@ -86,7 +86,7 @@ export function generateUsage(): string {
 
   return `
   Usage
-    $ operatem <group> <command> [args...]
+    $ operatem <command> [args...]
 
   Commands
 ${commandLines.join("\n")}

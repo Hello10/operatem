@@ -11,13 +11,13 @@ operatem is a Node CLI. Run it from a checkout, or install it as a dependency an
 ```sh
 # from a checkout of this repo
 pnpm install
-pnpm start subs status
+pnpm start status
 
 # from a metarepo that vendors operatem as a submodule
-tsx --tsconfig submodules/operatem/tsconfig.json submodules/operatem/src/cli.ts subs status
+tsx --tsconfig submodules/operatem/tsconfig.json submodules/operatem/src/cli.ts status
 
 # or the bundled shell wrapper, which runs from any working directory
-submodules/operatem/bin subs status
+submodules/operatem/bin status
 ```
 
 operatem always operates on the directory you run it from, which must be the metarepo root.
@@ -33,11 +33,11 @@ The tracked branch is `branch` in `.gitmodules` when set, otherwise the remote's
 ## The workflow
 
 ```sh
-operatem subs status                  # where am I?
-operatem subs sync                    # fast-forward everything, attach detached checkouts
+operatem status                  # where am I?
+operatem sync                    # fast-forward everything, attach detached checkouts
 # ... edit files in one or more submodules ...
-operatem subs commit -m "message"     # commit each dirty submodule, then the pointers
-operatem subs push                    # push submodules that are ahead, then the metarepo
+operatem commit -m "message"     # commit each dirty submodule, then the pointers
+operatem push                    # push submodules that are ahead, then the metarepo
 ```
 
 `commit` writes the same message to every dirty submodule, then commits the metarepo as `bump <names>: <message>` so the pointers land in one commit. `push` goes submodules first and uses git's `--recurse-submodules=on-demand` on the metarepo as a safety net, so the metarepo can never point at a commit its remote can't reach.
@@ -63,12 +63,32 @@ The reference below is generated from the command definitions by `pnpm docs`; `p
 
 <!-- commands:start -->
 
+### add
+
+- `operatem add --url [--name]`
+  Add a new submodule
+  - `--url`: Git repository URL
+  - `--name`: Submodule name (defaults to repo name)
+
+### commit
+
+- `operatem commit -m <message> [--workspace] [--all]`
+  Commit dirty submodules with a message, then commit the metarepo pointers
+  - `-m`, `--message`: Commit message (-m)
+  - `--workspace`: Only commit this submodule
+  - `--all`: Stage untracked files too
+
 ### install
 
 - `operatem install [--workspace] [--parallel]`
   Install dependencies for all workspaces
   - `--workspace`: Install only in specific workspace
   - `--parallel`: Install in parallel
+
+### push
+
+- `operatem push`
+  Push submodules that are ahead, then the metarepo
 
 ### run
 
@@ -77,26 +97,16 @@ The reference below is generated from the command definitions by `pnpm docs`; `p
   - `--workspace`: Run only in specific workspace
   - `--parallel`: Run in parallel
 
-### submodules (alias: subs)
+### status
 
-Manage git submodules
-
-- `operatem submodules status [--fetch]`
+- `operatem status [--fetch]`
   Show branch, changes, ahead/behind, and pointer state for every repo
   - `--fetch`: Fetch before comparing (default on; use --no-fetch to skip)
-- `operatem submodules sync`
+
+### sync
+
+- `operatem sync`
   Fast-forward the metarepo and every submodule, attaching detached checkouts to their branch
-- `operatem submodules commit -m <message> [--workspace] [--all]`
-  Commit dirty submodules with a message, then commit the metarepo pointers
-  - `-m`, `--message`: Commit message (-m)
-  - `--workspace`: Only commit this submodule
-  - `--all`: Stage untracked files too
-- `operatem submodules push`
-  Push submodules that are ahead, then the metarepo
-- `operatem submodules add --url [--name]`
-  Add a new submodule
-  - `--url`: Git repository URL
-  - `--name`: Submodule name (defaults to repo name)
 
 <!-- commands:end -->
 

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Text, Box } from "ink";
 import { execa } from "execa";
 
-import { loadConfig } from "../../config";
+import { loadConfig } from "../config";
 
 interface AddSubmoduleProps {
   url: string;
