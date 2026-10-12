@@ -5,7 +5,7 @@ import { renderCommands, updateReadme } from "../src/docs";
 test("renders every command group into the README section", () => {
   const rendered = renderCommands();
   assert.match(rendered, /### status/);
-  assert.match(rendered, /`operatem sync`/);
+  assert.match(rendered, /`operatem sync \[--bump\]`/);
   assert.match(rendered, /`operatem commit -m <message>/);
   assert.match(rendered, /`operatem add --url/);
   assert.match(rendered, /### run/);

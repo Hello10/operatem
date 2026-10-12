@@ -59,7 +59,7 @@ operatem push                    # push submodules that are ahead, then the meta
 
 ## Commands
 
-The reference below is generated from the command definitions by `pnpm docs`; `pnpm test` fails if it is stale.
+The reference below is generated from the command definitions by `pnpm run docs`; `pnpm test` fails if it is stale.
 
 <!-- commands:start -->
 
@@ -104,8 +104,9 @@ The reference below is generated from the command definitions by `pnpm docs`; `p
 
 ### sync
 
-- `operatem sync`
-  Fast-forward the metarepo and every submodule, attaching detached checkouts to their branch
+- `operatem sync [--bump]`
+  Fast-forward the metarepo and every submodule, attaching detached checkouts to their branch, then commit stale pointers for submodules on their origin tip
+  - `--bump`: Commit pointer bumps after syncing (default on; use --no-bump to skip)
 
 <!-- commands:end -->
 
@@ -114,7 +115,7 @@ The reference below is generated from the command definitions by `pnpm docs`; `p
 ```sh
 pnpm install
 pnpm test        # unit tests against throwaway git repos, then the docs check
-pnpm docs        # regenerate the command reference above
+pnpm run docs    # regenerate the command reference above
 pnpm start ...   # run the CLI from source
 ```
 

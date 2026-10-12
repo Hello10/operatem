@@ -21,6 +21,7 @@ const cli = meow(generateUsage(), {
     parallel: { type: "boolean" },
     message: { type: "string", shortFlag: "m" },
     fetch: { type: "boolean", default: true },
+    bump: { type: "boolean", default: true },
     help: {
       type: "boolean",
       shortFlag: "h",

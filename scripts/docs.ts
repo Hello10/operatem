@@ -10,7 +10,7 @@ const next = updateReadme(current);
 
 if (process.argv.includes("--check")) {
   if (current !== next) {
-    console.error("README.md command reference is out of date; run `pnpm docs`");
+    console.error("README.md command reference is out of date; run `pnpm run docs`");
     process.exit(1);
   }
   console.log("README.md command reference is up to date");

@@ -1,7 +1,7 @@
 /**
  * Renders the command reference for README.md from the command definitions,
  * so the docs cannot drift from what the CLI accepts. `scripts/docs.ts` is
- * the runner (`pnpm docs`, `pnpm docs --check`).
+ * the runner (`pnpm run docs`, `pnpm run docs --check`).
  */
 import * as commands from "./commands";
 import type { CommandDefinition, CommandGroup } from "./CommandDefinition";

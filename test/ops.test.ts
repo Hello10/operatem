@@ -9,7 +9,7 @@ import { push } from "../src/ops/push";
 import { status, rowHasIssue } from "../src/ops/status";
 import { collector, commitFile, createMetarepo, run } from "./fixture";
 
-test("sync attaches a fresh clone's submodule and fast-forwards it", async () => {
+test("sync attaches a fresh clone's submodule, fast-forwards it, and bumps the pointer", async () => {
   const repo = await createMetarepo();
   try {
     const first = collector();
@@ -18,19 +18,90 @@ test("sync attaches a fresh clone's submodule and fast-forwards it", async () =>
     assert.equal(first.state("submodules/sub"), "up-to-date");
     assert.equal(await currentBranch(repo.sub), "main");
 
-    /* Someone pushes to the submodule; sync should bring it forward. */
+    /* Someone pushes to the submodule; sync brings the checkout forward and
+       commits the pointer so the metarepo is not left dirty. */
     const theirs = await commitFile(repo.subElsewhere, "theirs.txt", "theirs\n");
     await run(repo.subElsewhere, ["push", "-q", "origin", "main"]);
     const second = collector();
     assert.equal(await sync(repo.root)(second.report, second.progress), true);
     assert.equal(second.state("submodules/sub"), "updated");
     assert.equal(await headSha(repo.sub), theirs);
+    assert.ok(second.lines.some((l) => l.name === "metarepo" && l.state === "bumped"));
+    assert.equal(await recordedSha(repo.root, "submodules/sub"), theirs);
+    assert.equal(
+      await run(repo.root, ["log", "-1", "--format=%s"]),
+      "bump submodules/sub: sync to origin",
+    );
 
-    /* The metarepo now records an older commit than the checkout. */
+    const rows = await status(repo.root, { fetch: false });
+    const sub = rows.find((r) => r.name === "submodules/sub")!;
+    assert.equal(sub.pointer, null);
+    assert.equal(rowHasIssue(sub), false);
+  } finally {
+    repo.cleanup();
+  }
+});
+
+test("sync --no-bump leaves the stale pointer for the user", async () => {
+  const repo = await createMetarepo();
+  try {
+    const prep = collector();
+    await sync(repo.root)(prep.report, prep.progress);
+    await commitFile(repo.subElsewhere, "theirs.txt", "theirs\n");
+    await run(repo.subElsewhere, ["push", "-q", "origin", "main"]);
+
+    const out = collector();
+    const op = sync(repo.root, { bump: false });
+    assert.equal(await op(out.report, out.progress), true);
+    assert.equal(out.state("submodules/sub"), "updated");
+    assert.ok(!out.lines.some((l) => l.state === "bumped"));
+
     const rows = await status(repo.root, { fetch: false });
     const sub = rows.find((r) => r.name === "submodules/sub")!;
     assert.notEqual(sub.pointer, null);
     assert.equal(rowHasIssue(sub), true);
+  } finally {
+    repo.cleanup();
+  }
+});
+
+test("sync does not bump a submodule that is ahead of origin", async () => {
+  const repo = await createMetarepo();
+  try {
+    const prep = collector();
+    await sync(repo.root)(prep.report, prep.progress);
+    const recorded = await recordedSha(repo.root, "submodules/sub");
+    /* Local, unpushed submodule work: bumping would record a commit origin
+       can't reach, so sync must leave the pointer alone. */
+    await commitFile(repo.sub, "mine.txt", "mine\n");
+
+    const out = collector();
+    assert.equal(await sync(repo.root)(out.report, out.progress), true);
+    assert.ok(!out.lines.some((l) => l.state === "bumped"));
+    assert.equal(await recordedSha(repo.root, "submodules/sub"), recorded);
+  } finally {
+    repo.cleanup();
+  }
+});
+
+test("sync's pointer bump leaves unrelated metarepo changes behind", async () => {
+  const repo = await createMetarepo();
+  try {
+    const prep = collector();
+    await sync(repo.root)(prep.report, prep.progress);
+    await commitFile(repo.subElsewhere, "theirs.txt", "theirs\n");
+    await run(repo.subElsewhere, ["push", "-q", "origin", "main"]);
+    writeFileSync(join(repo.root, "notes.txt"), "work in progress\n");
+    await run(repo.root, ["add", "notes.txt"]);
+
+    const out = collector();
+    assert.equal(await sync(repo.root)(out.report, out.progress), true);
+    assert.ok(out.lines.some((l) => l.name === "metarepo" && l.state === "bumped"));
+    assert.doesNotMatch(
+      await run(repo.root, ["show", "--stat", "--format=", "HEAD"]),
+      /notes\.txt/,
+    );
+    assert.match(await run(repo.root, ["status", "--porcelain"]), /notes\.txt/);
   } finally {
     repo.cleanup();
   }
