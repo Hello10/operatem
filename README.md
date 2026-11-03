@@ -66,7 +66,7 @@ The reference below is generated from the command definitions by `pnpm run docs`
 ### add
 
 - `operatem add --url [--name]`
-  Add a new submodule
+  Add a new submodule, syncing a metarepo that is behind origin first
   - `--url`: Git repository URL
   - `--name`: Submodule name (defaults to repo name)
 
@@ -105,7 +105,7 @@ The reference below is generated from the command definitions by `pnpm run docs`
 ### sync
 
 - `operatem sync [--bump]`
-  Fast-forward the metarepo and every submodule, attaching detached checkouts to their branch, then commit stale pointers for submodules on their origin tip
+  Bring the metarepo current (rebasing local commits onto origin), fast-forward every submodule, attaching detached checkouts to their branch, then commit stale pointers for submodules on their origin tip
   - `--bump`: Commit pointer bumps after syncing (default on; use --no-bump to skip)
 
 <!-- commands:end -->

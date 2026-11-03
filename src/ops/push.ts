@@ -33,7 +33,7 @@ async function pushRepo(cwd: string, pushArgs: string[] = []): Promise<PushState
 const DETAIL: Partial<Record<PushState, string>> = {
   detached: "run sync to attach a branch",
   "no-upstream": "branch has no upstream to push to",
-  diverged: "behind origin; pull first",
+  diverged: "behind origin; run sync first",
 };
 
 /* Push every submodule that is ahead, then the metarepo. */

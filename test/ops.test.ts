@@ -7,7 +7,14 @@ import { sync } from "../src/ops/sync";
 import { commit } from "../src/ops/commit";
 import { push } from "../src/ops/push";
 import { status, rowHasIssue } from "../src/ops/status";
-import { collector, commitFile, createMetarepo, run } from "./fixture";
+import { add, repoNameFromUrl } from "../src/ops/add";
+import {
+  collector,
+  commitFile,
+  createMetarepo,
+  run,
+  type Metarepo,
+} from "./fixture";
 
 test("sync attaches a fresh clone's submodule, fast-forwards it, and bumps the pointer", async () => {
   const repo = await createMetarepo();
@@ -202,4 +209,130 @@ test("push refuses when the metarepo is behind origin", async () => {
   } finally {
     repo.cleanup();
   }
+});
+
+/* A second clone of the metarepo, for simulating someone else's pushes. */
+async function metaElsewhere(repo: Metarepo): Promise<string> {
+  const path = join(repo.dir, "meta-elsewhere");
+  await run(repo.dir, ["clone", "-q", repo.metaOrigin, path]);
+  return path;
+}
+
+test("sync rebases local metarepo commits onto origin", async () => {
+  const repo = await createMetarepo();
+  try {
+    const prep = collector();
+    await sync(repo.root)(prep.report, prep.progress);
+    const elsewhere = await metaElsewhere(repo);
+    await commitFile(elsewhere, "theirs.txt", "theirs\n");
+    await run(elsewhere, ["push", "-q", "origin", "main"]);
+    await commitFile(repo.root, "mine.txt", "mine\n");
+
+    const out = collector();
+    assert.equal(await sync(repo.root)(out.report, out.progress), true);
+    assert.equal(out.state("metarepo"), "rebased");
+    assert.equal(
+      await run(repo.root, ["rev-list", "--left-right", "--count", "HEAD...@{upstream}"]),
+      "1\t0",
+    );
+
+    const pushed = collector();
+    assert.equal(await push(repo.root)(pushed.report, pushed.progress), true);
+    assert.equal(pushed.state("metarepo"), "pushed");
+  } finally {
+    repo.cleanup();
+  }
+});
+
+test("sync aborts a conflicting rebase and leaves everything as it was", async () => {
+  const repo = await createMetarepo();
+  try {
+    const prep = collector();
+    await sync(repo.root)(prep.report, prep.progress);
+    const elsewhere = await metaElsewhere(repo);
+    await commitFile(elsewhere, "same.txt", "theirs\n");
+    await run(elsewhere, ["push", "-q", "origin", "main"]);
+    const mine = await commitFile(repo.root, "same.txt", "mine\n");
+    const subTip = await commitFile(repo.subElsewhere, "theirs.txt", "theirs\n");
+    await run(repo.subElsewhere, ["push", "-q", "origin", "main"]);
+
+    const out = collector();
+    assert.equal(await sync(repo.root)(out.report, out.progress), false);
+    assert.equal(out.state("metarepo"), "conflict");
+    assert.equal(await headSha(repo.root), mine);
+    assert.equal(await run(repo.root, ["status", "--porcelain"]), "");
+    assert.notEqual(await headSha(repo.sub), subTip);
+  } finally {
+    repo.cleanup();
+  }
+});
+
+test("sync stops when the metarepo is dirty and behind", async () => {
+  const repo = await createMetarepo();
+  try {
+    const prep = collector();
+    await sync(repo.root)(prep.report, prep.progress);
+    const elsewhere = await metaElsewhere(repo);
+    await commitFile(elsewhere, "theirs.txt", "theirs\n");
+    await run(elsewhere, ["push", "-q", "origin", "main"]);
+    const subTip = await commitFile(repo.subElsewhere, "theirs.txt", "theirs\n");
+    await run(repo.subElsewhere, ["push", "-q", "origin", "main"]);
+    writeFileSync(join(repo.root, "README.md"), "meta, edited\n");
+
+    const out = collector();
+    assert.equal(await sync(repo.root)(out.report, out.progress), false);
+    assert.equal(out.state("metarepo"), "skipped-dirty");
+    assert.notEqual(await headSha(repo.sub), subTip);
+  } finally {
+    repo.cleanup();
+  }
+});
+
+test("add syncs a clean metarepo that is behind, then adds", async () => {
+  const repo = await createMetarepo();
+  try {
+    const prep = collector();
+    await sync(repo.root)(prep.report, prep.progress);
+    const elsewhere = await metaElsewhere(repo);
+    await commitFile(elsewhere, "theirs.txt", "theirs\n");
+    await run(elsewhere, ["push", "-q", "origin", "main"]);
+
+    const out = collector();
+    const op = add(repo.root, { url: repo.subOrigin, name: "second" });
+    assert.equal(await op(out.report, out.progress), true);
+    assert.equal(out.state("metarepo"), "updated");
+    assert.equal(out.state("second"), "added");
+    assert.equal(
+      await run(repo.root, ["rev-list", "--left-right", "--count", "HEAD...@{upstream}"]),
+      "0\t0",
+    );
+    assert.match(await run(repo.root, ["status", "--porcelain"]), /submodules\/second/);
+  } finally {
+    repo.cleanup();
+  }
+});
+
+test("add refuses a metarepo that is dirty and behind", async () => {
+  const repo = await createMetarepo();
+  try {
+    const prep = collector();
+    await sync(repo.root)(prep.report, prep.progress);
+    const elsewhere = await metaElsewhere(repo);
+    await commitFile(elsewhere, "theirs.txt", "theirs\n");
+    await run(elsewhere, ["push", "-q", "origin", "main"]);
+    writeFileSync(join(repo.root, "README.md"), "meta, edited\n");
+
+    const out = collector();
+    const op = add(repo.root, { url: repo.subOrigin, name: "second" });
+    assert.equal(await op(out.report, out.progress), false);
+    assert.equal(out.state("second"), "refused");
+    assert.doesNotMatch(await run(repo.root, ["status", "--porcelain"]), /second/);
+  } finally {
+    repo.cleanup();
+  }
+});
+
+test("repoNameFromUrl handles SSH and HTTPS URLs", () => {
+  assert.equal(repoNameFromUrl("git@github.com:Hello10/brand.git"), "brand");
+  assert.equal(repoNameFromUrl("https://github.com/Hello10/brand"), "brand");
 });

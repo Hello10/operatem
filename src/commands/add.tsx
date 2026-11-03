@@ -1,8 +1,5 @@
-import { useState, useEffect } from "react";
-import { Text, Box } from "ink";
-import { execa } from "execa";
-
-import { loadConfig } from "../config";
+import { RunOperation } from "../ui/Operation";
+import { add as addOperation } from "../ops/add";
 
 interface AddSubmoduleProps {
   url: string;
@@ -11,69 +8,18 @@ interface AddSubmoduleProps {
 }
 
 function AddSubmodule({ url, name, _originalCwd }: AddSubmoduleProps) {
-  const repoName = name || extractRepoName(url);
-  const [status, setStatus] = useState<"adding" | "success" | "error">(
-    "adding",
-  );
-  const [message, setMessage] = useState("");
-
-  useEffect(() => {
-    const addSubmodule = async () => {
-      try {
-        setStatus("adding");
-        setMessage(`Adding submodule ${repoName}...`);
-
-        const targetCwd = _originalCwd || process.cwd();
-        const config = loadConfig(targetCwd);
-
-        await execa(
-          "git",
-          ["submodule", "add", url, `${config.submodules}/${repoName}`],
-          {
-            cwd: targetCwd,
-          },
-        );
-
-        setStatus("success");
-        setMessage(`✅ Successfully added submodule ${repoName}`);
-
-        setTimeout(() => process.exit(0), 1000);
-      } catch (error) {
-        setStatus("error");
-        setMessage(
-          `❌ Failed to add submodule: ${error instanceof Error ? error.message : "Unknown error"}`,
-        );
-        setTimeout(() => process.exit(1), 2000);
-      }
-    };
-
-    addSubmodule();
-  }, [url, repoName]);
-
   return (
-    <Box>
-      <Text
-        color={
-          status === "error" ? "red" : status === "success" ? "green" : "yellow"
-        }
-      >
-        {message}
-      </Text>
-    </Box>
+    <RunOperation
+      title="add"
+      operation={addOperation(_originalCwd || process.cwd(), { url, name })}
+    />
   );
-}
-
-function extractRepoName(url: string): string {
-  // Handle both SSH and HTTPS URLs
-  // git@github.com:Hello10/brand.git -> brand
-  // https://github.com/Hello10/brand.git -> brand
-  const match = url.match(/([^\/]+?)(?:\.git)?$/);
-  return match ? match[1] : "repo";
 }
 
 export const add = {
   name: "add",
-  description: "Add a new submodule",
+  description:
+    "Add a new submodule, syncing a metarepo that is behind origin first",
   args: [],
   flags: [
     { name: "url", description: "Git repository URL", required: true },

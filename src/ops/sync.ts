@@ -1,5 +1,6 @@
 import { join } from "node:path";
 import {
+  aheadBehind,
   attach,
   currentBranch,
   git,
@@ -10,6 +11,7 @@ import {
   short,
   trackedBranch,
   tryGit,
+  upstream,
 } from "../git";
 import { errorDetail, type Operation } from "./report";
 
@@ -18,12 +20,20 @@ export interface SyncOptions {
   bump?: boolean;
 }
 
-type SyncState = "updated" | "up-to-date" | "skipped-dirty" | "diverged";
+type SyncState =
+  | "updated"
+  | "rebased"
+  | "up-to-date"
+  | "skipped-dirty"
+  | "diverged"
+  | "conflict";
 
-/* Fetch and fast-forward one checkout. */
+/* Fetch and fast-forward one checkout. With `rebase`, local commits that stop
+   a fast-forward are replayed onto the upstream; a replay that conflicts is
+   aborted, which puts the checkout back exactly as it was. */
 async function syncRepo(
   cwd: string,
-  { ignoreSubmodules = false, fetched = false } = {},
+  { ignoreSubmodules = false, fetched = false, rebase = false } = {},
 ): Promise<SyncState> {
   if (!fetched) await git(cwd, ["fetch", "--quiet"]);
   if (await isDirty(cwd, { ignoreSubmodules })) return "skipped-dirty";
@@ -31,7 +41,14 @@ async function syncRepo(
   try {
     await git(cwd, ["pull", "--quiet", "--ff-only"]);
   } catch {
-    return "diverged";
+    if (!rebase) return "diverged";
+    try {
+      await git(cwd, ["rebase", "--quiet", "@{upstream}"]);
+      return "rebased";
+    } catch {
+      await tryGit(cwd, ["rebase", "--abort"]);
+      return "conflict";
+    }
   }
   return (await headSha(cwd)) === before ? "up-to-date" : "updated";
 }
@@ -70,15 +87,27 @@ async function bumpPointers(
   return { names, sha: await headSha(root), message };
 }
 
+async function isBehind(cwd: string): Promise<boolean> {
+  if (!(await upstream(cwd))) return false;
+  return (await aheadBehind(cwd)).behind > 0;
+}
+
 const TONE: Record<SyncState, "good" | "muted" | "warn" | "bad"> = {
   updated: "good",
+  rebased: "good",
   "up-to-date": "muted",
   "skipped-dirty": "warn",
   diverged: "bad",
+  conflict: "bad",
 };
 
 /**
- * Fast-forward the metarepo, then every submodule on its tracked branch.
+ * Bring the metarepo current, then fast-forward every submodule on its tracked
+ * branch. Local metarepo commits are rebased onto origin. Submodules only move
+ * once the metarepo is current: moving them under a stale metarepo would record
+ * pointers that fight the ones already on origin, so a metarepo that is dirty
+ * and behind, or whose rebase conflicts, stops the sync with nothing changed.
+ * Local submodule commits are real work and are never rebased automatically.
  * Detached submodules are attached to that branch first when their checkout
  * sits on its history, which is the state `git submodule update` leaves them in.
  * Unless `bump` is off, stale pointers for submodules on their origin tip are
@@ -91,7 +120,31 @@ export function sync(root: string, options: SyncOptions = {}): Operation {
     let ok = true;
     progress("syncing metarepo");
     try {
-      const state = await syncRepo(root, { ignoreSubmodules: true });
+      const state = await syncRepo(root, {
+        ignoreSubmodules: true,
+        rebase: true,
+      });
+      if (state === "conflict") {
+        report({
+          name: "metarepo",
+          state,
+          tone: TONE[state],
+          detail:
+            "local commits conflict with origin; nothing changed, rebase by hand",
+        });
+        progress(null);
+        return false;
+      }
+      if (state === "skipped-dirty" && (await isBehind(root))) {
+        report({
+          name: "metarepo",
+          state,
+          tone: "bad",
+          detail: "behind origin with uncommitted changes; commit, then sync",
+        });
+        progress(null);
+        return false;
+      }
       if (state === "diverged") ok = false;
       report({ name: "metarepo", state, tone: TONE[state] });
     } catch (error) {
