@@ -1,56 +1,57 @@
 import { join } from "node:path";
+
 import {
-  aheadBehind,
-  attach,
-  currentBranch,
-  git,
-  headSha,
-  isDirty,
-  listSubmodules,
-  recordedSha,
-  short,
-  trackedBranch,
-  tryGit,
-  upstream,
+	aheadBehind,
+	attach,
+	currentBranch,
+	git,
+	headSha,
+	isDirty,
+	listSubmodules,
+	recordedSha,
+	short,
+	trackedBranch,
+	tryGit,
+	upstream,
 } from "../git";
 import { errorDetail, type Operation } from "./report";
 
 export interface SyncOptions {
-  /* Commit pointer bumps for submodules sitting on their origin branch tip. */
-  bump?: boolean;
+	/* Commit pointer bumps for submodules sitting on their origin branch tip. */
+	bump?: boolean;
 }
 
 type SyncState =
-  | "updated"
-  | "rebased"
-  | "up-to-date"
-  | "skipped-dirty"
-  | "diverged"
-  | "conflict";
+	| "updated"
+	| "rebased"
+	| "up-to-date"
+	| "skipped-dirty"
+	| "diverged"
+	| "conflict";
 
 /* Fetch and fast-forward one checkout. With `rebase`, local commits that stop
    a fast-forward are replayed onto the upstream; a replay that conflicts is
    aborted, which puts the checkout back exactly as it was. */
 async function syncRepo(
-  cwd: string,
-  { ignoreSubmodules = false, fetched = false, rebase = false } = {},
+	cwd: string,
+	{ ignoreSubmodules = false, fetched = false, rebase = false } = {},
 ): Promise<SyncState> {
-  if (!fetched) await git(cwd, ["fetch", "--quiet"]);
-  if (await isDirty(cwd, { ignoreSubmodules })) return "skipped-dirty";
-  const before = await headSha(cwd);
-  try {
-    await git(cwd, ["pull", "--quiet", "--ff-only"]);
-  } catch {
-    if (!rebase) return "diverged";
-    try {
-      await git(cwd, ["rebase", "--quiet", "@{upstream}"]);
-      return "rebased";
-    } catch {
-      await tryGit(cwd, ["rebase", "--abort"]);
-      return "conflict";
-    }
-  }
-  return (await headSha(cwd)) === before ? "up-to-date" : "updated";
+	if (!fetched) await git(cwd, ["fetch", "--quiet"]);
+	if (await isDirty(cwd, { ignoreSubmodules })) return "skipped-dirty";
+	const before = await headSha(cwd);
+	try {
+		await git(cwd, ["pull", "--quiet", "--ff-only"]);
+	} catch {
+		if (!rebase) return "diverged";
+		try {
+			await git(cwd, ["rebase", "--quiet", "@{upstream}"]);
+			return "rebased";
+		} catch {
+			await tryGit(cwd, ["rebase", "--abort"]);
+			return "conflict";
+		}
+	}
+	return (await headSha(cwd)) === before ? "up-to-date" : "updated";
 }
 
 /* Commit stale pointers for submodules whose checkout is exactly origin's
@@ -58,47 +59,47 @@ async function syncRepo(
    pointing at a commit its remote can't reach. Committing by pathspec leaves
    anything else dirty or staged in the metarepo untouched. */
 async function bumpPointers(
-  root: string,
+	root: string,
 ): Promise<{ names: string[]; sha: string; message: string } | null> {
-  const stale: Array<{ name: string; path: string }> = [];
-  for (const sub of await listSubmodules(root)) {
-    if (!sub.initialized) continue;
-    const cwd = join(root, sub.path);
-    const branch = await trackedBranch(root, sub);
-    const remote = await tryGit(cwd, ["rev-parse", `origin/${branch}`]);
-    if (remote === null) continue;
-    const head = await headSha(cwd);
-    if (head !== remote) continue;
-    const recorded = await recordedSha(root, sub.path);
-    if (recorded === null || recorded === head) continue;
-    stale.push({ name: sub.name, path: sub.path });
-  }
-  if (stale.length === 0) return null;
-  const names = stale.map((s) => s.name);
-  const message = `bump ${names.join(", ")}: sync to origin`;
-  await git(root, [
-    "commit",
-    "--quiet",
-    "-m",
-    message,
-    "--",
-    ...stale.map((s) => s.path),
-  ]);
-  return { names, sha: await headSha(root), message };
+	const stale: Array<{ name: string; path: string }> = [];
+	for (const sub of await listSubmodules(root)) {
+		if (!sub.initialized) continue;
+		const cwd = join(root, sub.path);
+		const branch = await trackedBranch(root, sub);
+		const remote = await tryGit(cwd, ["rev-parse", `origin/${branch}`]);
+		if (remote === null) continue;
+		const head = await headSha(cwd);
+		if (head !== remote) continue;
+		const recorded = await recordedSha(root, sub.path);
+		if (recorded === null || recorded === head) continue;
+		stale.push({ name: sub.name, path: sub.path });
+	}
+	if (stale.length === 0) return null;
+	const names = stale.map((s) => s.name);
+	const message = `bump ${names.join(", ")}: sync to origin`;
+	await git(root, [
+		"commit",
+		"--quiet",
+		"-m",
+		message,
+		"--",
+		...stale.map((s) => s.path),
+	]);
+	return { names, sha: await headSha(root), message };
 }
 
 async function isBehind(cwd: string): Promise<boolean> {
-  if (!(await upstream(cwd))) return false;
-  return (await aheadBehind(cwd)).behind > 0;
+	if (!(await upstream(cwd))) return false;
+	return (await aheadBehind(cwd)).behind > 0;
 }
 
 const TONE: Record<SyncState, "good" | "muted" | "warn" | "bad"> = {
-  updated: "good",
-  rebased: "good",
-  "up-to-date": "muted",
-  "skipped-dirty": "warn",
-  diverged: "bad",
-  conflict: "bad",
+	updated: "good",
+	rebased: "good",
+	"up-to-date": "muted",
+	"skipped-dirty": "warn",
+	diverged: "bad",
+	conflict: "bad",
 };
 
 /**
@@ -115,102 +116,117 @@ const TONE: Record<SyncState, "good" | "muted" | "warn" | "bad"> = {
  * dirty after a sync.
  */
 export function sync(root: string, options: SyncOptions = {}): Operation {
-  const { bump = true } = options;
-  return async (report, progress) => {
-    let ok = true;
-    progress("syncing metarepo");
-    try {
-      const state = await syncRepo(root, {
-        ignoreSubmodules: true,
-        rebase: true,
-      });
-      if (state === "conflict") {
-        report({
-          name: "metarepo",
-          state,
-          tone: TONE[state],
-          detail:
-            "local commits conflict with origin; nothing changed, rebase by hand",
-        });
-        progress(null);
-        return false;
-      }
-      if (state === "skipped-dirty" && (await isBehind(root))) {
-        report({
-          name: "metarepo",
-          state,
-          tone: "bad",
-          detail: "behind origin with uncommitted changes; commit, then sync",
-        });
-        progress(null);
-        return false;
-      }
-      if (state === "diverged") ok = false;
-      report({ name: "metarepo", state, tone: TONE[state] });
-    } catch (error) {
-      ok = false;
-      report({ name: "metarepo", state: "error", tone: "bad", detail: errorDetail(error) });
-    }
+	const { bump = true } = options;
+	return async (report, progress) => {
+		let ok = true;
+		progress("syncing metarepo");
+		try {
+			const state = await syncRepo(root, {
+				ignoreSubmodules: true,
+				rebase: true,
+			});
+			if (state === "conflict") {
+				report({
+					name: "metarepo",
+					state,
+					tone: TONE[state],
+					detail:
+						"local commits conflict with origin; nothing changed, rebase by hand",
+				});
+				progress(null);
+				return false;
+			}
+			if (state === "skipped-dirty" && (await isBehind(root))) {
+				report({
+					name: "metarepo",
+					state,
+					tone: "bad",
+					detail: "behind origin with uncommitted changes; commit, then sync",
+				});
+				progress(null);
+				return false;
+			}
+			if (state === "diverged") ok = false;
+			report({ name: "metarepo", state, tone: TONE[state] });
+		} catch (error) {
+			ok = false;
+			report({
+				name: "metarepo",
+				state: "error",
+				tone: "bad",
+				detail: errorDetail(error),
+			});
+		}
 
-    for (const sub of await listSubmodules(root)) {
-      progress(`syncing ${sub.name}`);
-      const cwd = join(root, sub.path);
-      try {
-        if (!sub.initialized) {
-          await git(root, ["submodule", "update", "--init", "--", sub.path]);
-        }
-        await git(cwd, ["fetch", "--quiet"]);
-        const branch = await trackedBranch(root, sub);
-        let attached = false;
-        if ((await currentBranch(cwd)) === "HEAD") {
-          const result = await attach(cwd, branch);
-          if (result === "attached") attached = true;
-          if (result === "no-remote-branch" || result === "diverged") {
-            ok = false;
-            report({
-              name: sub.name,
-              state: "detached",
-              tone: "bad",
-              detail:
-                result === "no-remote-branch"
-                  ? `origin has no branch "${branch}"`
-                  : `checkout is not on origin/${branch}; check out a branch by hand`,
-            });
-            continue;
-          }
-        }
-        const state = await syncRepo(cwd, { fetched: true });
-        if (state === "diverged") ok = false;
-        report({
-          name: sub.name,
-          state: sub.initialized ? state : "initialized",
-          tone: TONE[state],
-          detail: attached ? `attached to ${branch}` : undefined,
-        });
-      } catch (error) {
-        ok = false;
-        report({ name: sub.name, state: "error", tone: "bad", detail: errorDetail(error) });
-      }
-    }
+		for (const sub of await listSubmodules(root)) {
+			progress(`syncing ${sub.name}`);
+			const cwd = join(root, sub.path);
+			try {
+				if (!sub.initialized) {
+					await git(root, ["submodule", "update", "--init", "--", sub.path]);
+				}
+				await git(cwd, ["fetch", "--quiet"]);
+				const branch = await trackedBranch(root, sub);
+				let attached = false;
+				if ((await currentBranch(cwd)) === "HEAD") {
+					const result = await attach(cwd, branch);
+					if (result === "attached") attached = true;
+					if (result === "no-remote-branch" || result === "diverged") {
+						ok = false;
+						report({
+							name: sub.name,
+							state: "detached",
+							tone: "bad",
+							detail:
+								result === "no-remote-branch"
+									? `origin has no branch "${branch}"`
+									: `checkout is not on origin/${branch}; check out a branch by hand`,
+						});
+						continue;
+					}
+				}
+				const state = await syncRepo(cwd, { fetched: true });
+				if (state === "diverged") ok = false;
+				report({
+					name: sub.name,
+					state: sub.initialized ? state : "initialized",
+					tone: TONE[state],
+					detail: attached ? `attached to ${branch}` : undefined,
+				});
+			} catch (error) {
+				ok = false;
+				report({
+					name: sub.name,
+					state: "error",
+					tone: "bad",
+					detail: errorDetail(error),
+				});
+			}
+		}
 
-    if (bump) {
-      progress("bumping pointers");
-      try {
-        const bumped = await bumpPointers(root);
-        if (bumped) {
-          report({
-            name: "metarepo",
-            state: "bumped",
-            tone: "good",
-            detail: `${short(bumped.sha)} ${bumped.message}`,
-          });
-        }
-      } catch (error) {
-        ok = false;
-        report({ name: "metarepo", state: "error", tone: "bad", detail: errorDetail(error) });
-      }
-    }
-    progress(null);
-    return ok;
-  };
+		if (bump) {
+			progress("bumping pointers");
+			try {
+				const bumped = await bumpPointers(root);
+				if (bumped) {
+					report({
+						name: "metarepo",
+						state: "bumped",
+						tone: "good",
+						detail: `${short(bumped.sha)} ${bumped.message}`,
+					});
+				}
+			} catch (error) {
+				ok = false;
+				report({
+					name: "metarepo",
+					state: "error",
+					tone: "bad",
+					detail: errorDetail(error),
+				});
+			}
+		}
+		progress(null);
+		return ok;
+	};
 }
