@@ -1,6 +1,6 @@
 {
 	"name": "operatem",
-	"version": "0.2.1",
+	"version": "0.2.2",
 	"description": "Simple metarepo management around git submodules",
 	"type": "module",
 	"bin": {
@@ -18,10 +18,10 @@
 		"prepare": "vp config"
 	},
 	"dependencies": {
-		"meow": "^13.2.0",
-		"ink": "^6.2.0",
-		"react": "^19.0.0",
 		"execa": "^9.3.1",
+		"ink": "^6.2.0",
+		"meow": "^13.2.0",
+		"react": "^19.0.0",
 		"tsx": "^4.17.0"
 	},
 	"devDependencies": {
