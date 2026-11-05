@@ -12,6 +12,7 @@ peerDependencyRules:
     vite: "*"
 allowBuilds:
   esbuild: true
+# Vite+ manages Node and pnpm; pnpm should not also manage them.
 runtimeOnFail: ignore
 pmOnFail: ignore
 minimumReleaseAgeExclude:

@@ -10,8 +10,8 @@ operatem is a Node CLI. Run it from a checkout, or install it as a dependency an
 
 ```sh
 # from a checkout of this repo
-pnpm install
-pnpm start status
+vp install
+vp run start status
 
 # from a metarepo that vendors operatem as a submodule
 tsx --tsconfig submodules/operatem/tsconfig.json submodules/operatem/src/cli.ts status
@@ -21,6 +21,19 @@ submodules/operatem/bin status
 ```
 
 operatem always operates on the directory you run it from, which must be the metarepo root.
+
+## Develop
+
+```sh
+curl -fsSL https://vite.plus | bash   # once per machine; then `vp env on`
+vp install        # also installs the pre-commit hook (vp staged)
+vp check          # format, lint, and type checks
+vp check --fix
+vp run test       # node --test, then checks this README's command reference
+vp run verify     # check + test
+```
+
+[Vite+](https://viteplus.dev/guide/) lints and formats; the CLI itself runs from source through `tsx`. Node and pnpm are pinned in `devEngines` in `package.json` and managed by the global `vp` CLI ([docs](https://viteplus.dev/guide/env)). Lint, format, and staged settings come from `@hello10/config-vite-plus` in [`hello10/configs`](https://github.com/hello10/configs).
 
 ## How it thinks about submodules
 
