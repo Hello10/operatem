@@ -4,5 +4,5 @@
  * cursor-movement redraws, so logs stay clean.
  */
 if (!process.stdout.isTTY && process.env.CI === undefined) {
-  process.env.CI = "true";
+	process.env.CI = "true";
 }

@@ -1,48 +1,64 @@
 {
-  "name": "operatem",
-  "version": "0.2.1",
-  "description": "Simple metarepo management around git submodules",
-  "type": "module",
-  "bin": {
-    "operatem": "./src/cli.ts"
-  },
-  "scripts": {
-    "build": "tsc",
-    "dev": "tsx src/cli.ts",
-    "start": "tsx src/cli.ts",
-    "docs": "tsx scripts/docs.ts",
-    "test": "tsx --test test/*.test.ts && tsx scripts/docs.ts --check"
-  },
-  "dependencies": {
-    "meow": "^13.2.0",
-    "ink": "^6.2.0",
-    "react": "^19.0.0",
-    "execa": "^9.3.1",
-    "tsx": "^4.17.0"
-  },
-  "devDependencies": {
-    "@types/node": "^22.5.0",
-    "@types/react": "^19.0.0",
-    "typescript": "^5.5.4"
-  },
-  "engines": {
-    "node": ">=18"
-  },
-  "keywords": [
-    "metarepo",
-    "git",
-    "submodules",
-    "cli"
-  ],
-  "author": "jump.systems",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/jumpsystems/operatem.git"
-  },
-  "bugs": {
-    "url": "https://github.com/jumpsystems/operatem/issues"
-  },
-  "homepage": "https://github.com/jumpsystems/operatem",
-  "packageManager": "pnpm@10.29.2"
+	"name": "operatem",
+	"version": "0.2.1",
+	"description": "Simple metarepo management around git submodules",
+	"type": "module",
+	"bin": {
+		"operatem": "./src/cli.ts"
+	},
+	"scripts": {
+		"build": "tsc",
+		"dev": "tsx src/cli.ts",
+		"start": "tsx src/cli.ts",
+		"docs": "tsx scripts/docs.ts",
+		"test": "tsx --test test/*.test.ts && tsx scripts/docs.ts --check",
+		"check": "vp check",
+		"fix": "vp check --fix",
+		"verify": "vp check && pnpm test",
+		"prepare": "vp config"
+	},
+	"dependencies": {
+		"meow": "^13.2.0",
+		"ink": "^6.2.0",
+		"react": "^19.0.0",
+		"execa": "^9.3.1",
+		"tsx": "^4.17.0"
+	},
+	"devDependencies": {
+		"@types/node": "^22.5.0",
+		"@types/react": "^19.0.0",
+		"typescript": "^5.5.4",
+		"vite-plus": "catalog:"
+	},
+	"engines": {
+		"node": ">=18"
+	},
+	"devEngines": {
+		"runtime": {
+			"name": "node",
+			"version": "24.22.2",
+			"onFail": "download"
+		},
+		"packageManager": {
+			"name": "pnpm",
+			"version": "12.16.1",
+			"onFail": "download"
+		}
+	},
+	"keywords": [
+		"metarepo",
+		"git",
+		"submodules",
+		"cli"
+	],
+	"author": "jump.systems",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/jumpsystems/operatem.git"
+	},
+	"bugs": {
+		"url": "https://github.com/jumpsystems/operatem/issues"
+	},
+	"homepage": "https://github.com/jumpsystems/operatem"
 }
