@@ -33,6 +33,9 @@ importers:
         specifier: ^4.17.0
         version: 4.23.15
     devDependencies:
+      '@hello10/config-vite-plus':
+        specifier: ^1.0.0
+        version: 1.0.0(vite-plus@1.5.0(@types/node@22.20.4)(@vitest/ui@5.1.0)(esbuild@0.28.2)(tsx@4.23.15)(typescript@5.9.3))
       '@types/node':
         specifier: ^22.5.0
         version: 22.20.4
@@ -222,6 +225,11 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
+
+  '@hello10/config-vite-plus@1.0.0':
+    resolution: {integrity: sha512-MCD9dF82egKijT0TbheBvGs8/MSE3IijofN0EWPZ+TSNreFtGgeV0J70hSrcAcNxPqkZIcM4I/6oDlmIYlhOeA==}
+    peerDependencies:
+      vite-plus: '>=1.4.0'
 
   '@jridgewell/resolve-uri@3.1.2':
     resolution: {integrity: sha512-bRISgCIjP20/tbWSPWMEi54QVPRZExkuD9lJL+UIxUKtwVJA8wW1Trb1jMs1RFXo1CBTNZ/5hpC9QvmKWdopKw==}
@@ -1483,6 +1491,10 @@ snapshots:
 
   '@esbuild/win32-x64@0.28.2':
     optional: true
+
+  '@hello10/config-vite-plus@1.0.0(vite-plus@1.5.0(@types/node@22.20.4)(@vitest/ui@5.1.0)(esbuild@0.28.2)(tsx@4.23.15)(typescript@5.9.3))':
+    dependencies:
+      vite-plus: 1.5.0(@types/node@22.20.4)(@vitest/ui@5.1.0)(esbuild@0.28.2)(tsx@4.23.15)(typescript@5.9.3)
 
   '@jridgewell/resolve-uri@3.1.2': {}
 
